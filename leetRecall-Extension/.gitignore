@@ -1,0 +1,16 @@
+# Firebase configuration
+config.json
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
