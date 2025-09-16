@@ -1,5 +1,6 @@
 import { addDoc, collection, db, query, where, getDocs } from "./firebase.js";
 import { updateDoc } from "firebase/firestore";
+import { normalizeUrl } from "./utils.js";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "saveProblem") {
@@ -33,7 +34,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
             try {
                 const problemsRef = collection(db, "users", uid, "problems");
-                const q = query(problemsRef, where("url", "==", message.url));
+                const q = query(problemsRef, where("url", "==", normalizeUrl(message.url)));
                 const querySnapshot = await getDocs(q);
                 sendResponse({ saved: !querySnapshot.empty });
             } catch (err) {
