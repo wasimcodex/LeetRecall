@@ -1,0 +1,20 @@
+{
+  "name": "leetrecall-extension",
+  "version": "1.0.0",
+  "main": "background.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "firebase": "^12.2.1"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

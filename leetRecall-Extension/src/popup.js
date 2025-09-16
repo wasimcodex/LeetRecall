@@ -1,5 +1,5 @@
 import { auth, db, GoogleAuthProvider, signInWithPopup, collection, addDoc } from "./firebase.js";
-import { onAuthStateChanged, signInWithCredential } from "./firebase_sdk/firebase-auth.js";
+import { onAuthStateChanged, signInWithCredential } from "firebase/auth";
 
 const client_id = 'you_client_id_here.apps.googleusercontent.com'; // Replace with your actual client ID
 

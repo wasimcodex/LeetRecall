@@ -1,5 +1,5 @@
 import { addDoc, collection, db, query, where, getDocs } from "./firebase.js";
-import { updateDoc } from "./firebase_sdk/firebase-firestore.js";
+import { updateDoc } from "firebase/firestore";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "saveProblem") {
