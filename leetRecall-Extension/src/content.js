@@ -1,13 +1,26 @@
 function scrapeProblem() {
   return {
     title: getTitle(),
-    url: window.location.href,
+    url: normalizeUrl(window.location.href),
     description: getDescription(),
     difficulty: getDifficulty(),
     tags: getTags(),
     lang: getSelectedLanguage() || "Unknown",
     code: getCodeFromEditor()
   };
+}
+
+function normalizeUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    const match = urlObj.pathname.match(/\/problems\/([^\/]+)/);
+    if (match && match[1]) {
+      return `https://leetcode.com/problems/${match[1]}/`;
+    }
+    return url; // return original if no match
+  } catch {
+    return url; // return original if invalid URL
+  }
 }
 
 /** Get page title */
@@ -112,7 +125,7 @@ function injectSaveButton(isSaved = false) {
             if (isSaved) {
                 const code = getCodeFromEditor();
                 chrome.runtime.sendMessage(
-                    { action: "updateProblemCode", url: window.location.href, code },
+                    { action: "updateProblemCode", url: normalizeUrl(window.location.href), code },
                     (response) => {
                         if (response?.success) {
                             saveBtn.innerHTML = getCheckIcon("green");

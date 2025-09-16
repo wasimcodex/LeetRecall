@@ -1,4 +1,4 @@
-import config from '../config.json' with { type: 'json' };
+import config from './config.json' with { type: 'json' };
 import { initializeApp } from 'firebase/app';
 import {  getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
