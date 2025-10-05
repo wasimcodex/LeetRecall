@@ -1,0 +1,40 @@
+<!-- Loading template must come first -->
+<ng-template #loading>
+  <div class="loading-screen">
+    <div class="spinner"></div>
+  </div>
+</ng-template>
+
+<!-- Main app container -->
+<div class="app-container" *ngIf="!(loading$ | async); else loading">
+  <!-- Show this if NOT logged in -->
+  <div *ngIf="!(user$ | async); else loggedIn">
+    <h2>Welcome to LeetRecall 👋</h2>
+    <p>Sign in with Google to sync your saved problems.</p>
+
+    <button class="google-btn" (click)="signInWithGoogle()">
+      <img
+        class="google-icon"
+        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+        alt="Google logo"
+      />
+      <span>Sign in with Google</span>
+    </button>
+  </div>
+
+  <!-- Show this when user IS logged in -->
+  <ng-template #loggedIn>
+    <div class="user-card" *ngIf="user$ | async as user">
+      <img
+        [src]="user.photoURL"
+        alt="User avatar"
+        class="avatar"
+        *ngIf="user.photoURL"
+      />
+      <h3>{{ user.displayName }}</h3>
+      <p>{{ user.email }}</p>
+
+      <button class="sign-out-btn" (click)="signOut()">Sign Out</button>
+    </div>
+  </ng-template>
+</div>

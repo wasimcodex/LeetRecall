@@ -1,0 +1,55 @@
+<div class="dashboard-container" *ngIf="user$ | async as user">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">LeetRecall</div>
+
+    <div class="nav-right">
+      <img
+        [src]="user.photoURL || 'assets/avatar-placeholder.png'"
+        alt="Profile"
+        class="avatar"
+      />
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <button [routerLink]="['/review']" class="review-random-btn">🎲 Review Random</button>
+    
+    <h2>Recently Saved Questions</h2>
+
+    <div class="empty-state" *ngIf="!loading && problems.length === 0">
+      <p>You haven't saved any problems yet.</p>
+      <p>Go to LeetCode and start saving your favorite problems!</p>
+    </div>
+
+    <div
+      class="problem-card"
+      *ngFor="let problem of problems"
+    >
+      <div class="problem-header">
+        <a [routerLink]="['/review', problem.id]" class="title">{{
+          problem.title
+        }}</a>
+        <span class="difficulty" [ngClass]="problem.difficulty.toLowerCase()">
+          {{ problem.difficulty }}
+        </span>
+      </div>
+      <div class="tags">
+        <span class="tag" *ngFor="let tag of problem.tags">{{ tag }}</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button
+        *ngIf="!noMore && problems.length > 0"
+        (click)="loadProblems()"
+        [disabled]="loading"
+      >
+        {{ loading ? "Loading..." : "Show More" }}
+      </button>
+
+      <p *ngIf="noMore" class="no-more">No more problems to show</p>
+    </div>
+  </main>
+</div>
