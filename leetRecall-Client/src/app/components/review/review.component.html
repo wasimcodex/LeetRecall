@@ -1,0 +1,36 @@
+<div class="review-container" *ngIf="problem">
+  <div class="problem-card">
+    <div class="problem-header">
+      <h2>{{ problem.title }}</h2>
+      <span class="difficulty" [ngClass]="problem.difficulty?.toLowerCase()">
+        {{ problem.difficulty }}
+      </span>
+    </div>
+
+    <div class="tags">
+      <span *ngFor="let tag of problem.tags" class="tag">{{ tag }}</span>
+    </div>
+
+    <div class="description" [innerHTML]="problem.description"></div>
+
+    <div class="solution-container">
+      <button class="toggle-btn" (click)="toggleSolution()">
+        {{ showSolution ? 'Hide Solution' : 'Show Solution' }}
+      </button>
+
+      <div class="solution-box" [class.open]="showSolution">
+        <pre><code>{{ problem.code }}</code></pre>
+      </div>
+    </div>
+
+    <!-- Recall Buttons -->
+    <div class="recall-actions">
+      <button class="remember-btn" (click)="markRemembered()">
+        Remembered
+      </button>
+      <button class="forgot-btn" (click)="markForgot()">
+        Forgot
+      </button>
+    </div>
+  </div>
+</div>

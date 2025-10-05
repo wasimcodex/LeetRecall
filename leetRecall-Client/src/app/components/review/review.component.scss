@@ -1,0 +1,187 @@
+.review-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.problem-card {
+  max-width: 800px;
+  min-width: 300px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 2rem 2.5rem;
+  transition: all 0.3s ease;
+
+  &.fade-out {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  &.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.problem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .difficulty {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    border-radius: 6px;
+    padding: 4px 10px;
+
+    &.easy {
+      background: #dcfce7;
+      color: #166534;
+    }
+    &.medium {
+      background: #fef9c3;
+      color: #92400e;
+    }
+    &.hard {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+}
+
+// check of better solution
+// TODO: look into ViewEncapsulation
+:host {
+  ::ng-deep {
+    .problem-img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 12px 0;
+      display: block;
+    }
+  }
+}
+
+
+.tags {
+  margin-bottom: 1rem;
+
+  .tag {
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+  }
+}
+
+.description {
+  color: #1f2937;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Show Solution Section --- */
+.solution-container {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+
+  .toggle-btn {
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #1d4ed8;
+    }
+  }
+
+  .solution-box {
+    overflow-y: auto;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border: 1px solid #e5e7eb;
+    padding: 0 1rem;
+
+    &.open {
+      max-height: 800px; /* enough to fit long code blocks */
+      opacity: 1;
+      padding: 1rem;
+    }
+
+    pre {
+      margin: 0;
+      font-family: 'SFMono-Regular', Menlo, monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #111827;
+    }
+  }
+}
+
+.recall-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  gap: 1rem;
+
+  button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+
+  .remember-btn {
+    background: #e0f2fe;
+    color: #0369a1;
+
+    &:hover {
+      background: #bae6fd;
+    }
+  }
+
+  .forgot-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+
+    &:hover {
+      background: #fecaca;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+
+  .recall-actions {
+    gap: 0.75rem;
+
+    button {
+      // Make buttons take up the full width for easier tapping
+      width: 100%;
+    }
+  }
+}
