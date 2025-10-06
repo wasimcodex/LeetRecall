@@ -12,10 +12,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
 
             try {
-                addDoc(collection(db, "users", uid, "problems"), {
-                    ...message.data, savedAt: new Date().toISOString()
-                })
-                .then(() => sendResponse({ success: true }));
+                const collectionRef = collection(db, "users", uid, "problems");
+                const q = query(collectionRef, where("url", "==", normalizeUrl(message.data.url)));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const doc = querySnapshot.docs[0];
+                    await updateDoc(doc.ref, { ...message.data, lastUpdated: new Date().toISOString() });
+                    sendResponse({ success: true });
+                    return;
+                } else {
+                    await addDoc(collection(db, "users", uid, "problems"), { ...message.data, savedAt: new Date().toISOString() });
+                    sendResponse({ success: true });
+                    return;
+                }
             } catch (err) {
                 console.error("Error saving problem:", err);
                 sendResponse({ success: false, error: "Failed to save problem." });
