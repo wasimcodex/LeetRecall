@@ -45,14 +45,15 @@ function getDifficulty() {
 /** Extract problem tags (from links like /tag/...) */
 function getTags() {
   const links = document.querySelectorAll("a[href^='/tag/']");
-  return Array.from(links).map(link => link.innerText.trim());
+  return Array.from(links).map((link) => link.innerText.trim());
 }
 
 /** Extract selected language from the editor */
 function getSelectedLanguage() {
   // Locate the "Auto" button
-  const autoButton = Array.from(document.querySelectorAll("button"))
-    .find(btn => btn.textContent.trim() === "Auto");
+  const autoButton = Array.from(document.querySelectorAll("button")).find(
+    (btn) => btn.textContent.trim() === "Auto"
+  );
 
   if (!autoButton) return null;
 
@@ -72,7 +73,7 @@ function getCodeFromEditor() {
   const lines = document.querySelectorAll(".view-lines .view-line");
 
   // Map each line with its position
-  const sorted = Array.from(lines).map(line => {
+  const sorted = Array.from(lines).map((line) => {
     const top = parseInt(line.style.top.replace("px", ""), 10);
     return { top, text: line.innerText };
   });
@@ -81,90 +82,98 @@ function getCodeFromEditor() {
   sorted.sort((a, b) => a.top - b.top);
 
   // Join into final code block
-  return sorted.map(line => line.text).join("\n");
+  return sorted.map((line) => line.text).join("\n");
 }
 
 function injectSaveButton(isSaved = false) {
-    if (document.getElementById("lc-save-btn")) return; // ✅ correct duplicate check
+  const existingBtn = document.getElementById("lc-save-btn");
+  if (existingBtn) {
+    existingBtn.remove();
+  }
 
-    const toolbar = document.querySelector(".h-full.py-2");
-    if (!toolbar) {
-        console.warn("Toolbar not found, cannot inject Save button.");
-        return;
+  const toolbar = document.querySelector(".h-full.py-2");
+  if (!toolbar) {
+    console.warn("Toolbar not found, cannot inject Save button.");
+    return;
+  }
+
+  const actionBtnGrp = toolbar.children[0];
+
+  const saveBtn = document.createElement("button");
+  saveBtn.id = "lc-save-btn";
+  saveBtn.title = isSaved ? "Update Code" : "Save Problem";
+
+  Object.assign(saveBtn.style, {
+    width: "32px",
+    height: "32px",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+    backgroundColor: "rgba(0,0,0,0.05)", // light grey
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background-color 0.2s ease",
+  });
+
+  // Hover effect
+  saveBtn.addEventListener("mouseenter", () => {
+    saveBtn.style.backgroundColor = "rgba(0,0,0,0.1)";
+  });
+  saveBtn.addEventListener("mouseleave", () => {
+    saveBtn.style.backgroundColor = "rgba(0,0,0,0.05)";
+  });
+
+  // Default save (💾 icon)
+  saveBtn.innerHTML = isSaved ? getSavedIcon() : getSaveIcon();
+
+  saveBtn.addEventListener("click", async () => {
+    try {
+      if (isSaved) {
+        const code = getCodeFromEditor();
+        chrome.runtime.sendMessage(
+          {
+            action: "updateProblemCode",
+            url: normalizeUrl(window.location.href),
+            code,
+          },
+          (response) => {
+            if (response?.success) {
+              saveBtn.innerHTML = getCheckIcon("green");
+              setTimeout(() => {
+                saveBtn.innerHTML = getSavedIcon();
+              }, 2000);
+            } else {
+              throw new Error(response?.error || "Unknown error");
+            }
+          }
+        );
+      } else {
+        const problemData = scrapeProblem();
+
+        chrome.runtime.sendMessage(
+          { action: "saveProblem", data: problemData },
+          (response) => {
+            if (response?.success) {
+              saveBtn.innerHTML = getCheckIcon("green");
+              setTimeout(() => {
+                saveBtn.innerHTML = getSavedIcon();
+              }, 2000);
+            }
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Error during save operation:", err);
+      saveBtn.innerHTML = getErrorIcon();
+      saveBtn.textContent = "❌ Error";
+      setTimeout(() => {
+        saveBtn.innerHTML = getSaveIcon();
+        saveBtn.textContent = "";
+      }, 2000);
     }
-
-    const actionBtnGrp = toolbar.children[0];
-
-    const saveBtn = document.createElement("button");
-    saveBtn.id = "lc-save-btn";
-    saveBtn.title = isSaved ? "Update Code" : "Save Problem";
-
-    Object.assign(saveBtn.style, {
-        width: "32px",
-        height: "32px",
-        borderRadius: "6px",
-        border: "none",
-        cursor: "pointer",
-        backgroundColor: "rgba(0,0,0,0.05)", // light grey
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "background-color 0.2s ease"
-    });
-
-    // Hover effect
-    saveBtn.addEventListener("mouseenter", () => {
-        saveBtn.style.backgroundColor = "rgba(0,0,0,0.1)";
-    });
-    saveBtn.addEventListener("mouseleave", () => {
-        saveBtn.style.backgroundColor = "rgba(0,0,0,0.05)";
-    });
-
-    // Default save (💾 icon)
-    saveBtn.innerHTML = isSaved ? getSavedIcon() : getSaveIcon();
-
-    saveBtn.addEventListener("click", async () => {
-        try {
-            if (isSaved) {
-                const code = getCodeFromEditor();
-                chrome.runtime.sendMessage(
-                    { action: "updateProblemCode", url: normalizeUrl(window.location.href), code },
-                    (response) => {
-                        if (response?.success) {
-                            saveBtn.innerHTML = getCheckIcon("green");
-                            setTimeout(() => {
-                                saveBtn.innerHTML = getSavedIcon();
-                            }, 2000);
-                        } else {
-                            throw new Error(response?.error || "Unknown error");
-                        }
-                    });
-            }
-            else {
-                const problemData = scrapeProblem();
-
-                chrome.runtime.sendMessage(
-                    { action: "saveProblem", data: problemData },
-                    (response) => {
-                    if (response?.success) {
-                        saveBtn.innerHTML = getCheckIcon("green");
-                        setTimeout(() => {
-                            saveBtn.innerHTML = getSavedIcon();
-                        }, 2000);
-                    }
-                });
-            }
-        } catch (err) {
-            console.error("Error during save operation:", err);
-            saveBtn.innerHTML = getErrorIcon();
-            saveBtn.textContent = "❌ Error";
-            setTimeout(() => {
-                saveBtn.innerHTML = getSaveIcon();
-                saveBtn.textContent = "";
-            }, 2000);
-        }
-    });
-    actionBtnGrp.appendChild(saveBtn);
+  });
+  actionBtnGrp.appendChild(saveBtn);
 }
 
 // --- Icon helpers ---
@@ -196,44 +205,44 @@ function getErrorIcon() {
   </svg>`;
 }
 
-// ✅ Use MutationObserver to handle SPA navigation
-const observer = new MutationObserver(() => {
-    const problemUrl = window.location.href;
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "leetCodePageLoaded") {
+    const problemUrl = message.url;
 
-    if (problemUrl.includes("leetcode.com/problems/")) {
-        // Check if already saved
-        chrome.runtime.sendMessage(
-            { action: "checkIfSaved", url: problemUrl },
-            (response) => {
-                if (response?.saved) {
-                    injectSaveButton(true);
-                } else {
-                    injectSaveButton(false);
-                }
-            }
-        );
-    }
+    console.log("LeetCode problem page loaded:", problemUrl);
+
+    chrome.runtime.sendMessage(
+      { action: "checkIfSaved", url: problemUrl },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Runtime error:", chrome.runtime.lastError);
+          return;
+        }
+        injectSaveButton(response?.saved || false);
+      }
+    );
+  }
 });
-observer.observe(document.body, { childList: true, subtree: true });
-
 
 console.log("✅ Content script loaded on", window.location.href);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scrapeProblem") {
-    const onLeetCodeProblem = window.location.hostname === "leetcode.com" && window.location.pathname.startsWith("/problems/");
+    const onLeetCodeProblem =
+      window.location.hostname === "leetcode.com" &&
+      window.location.pathname.startsWith("/problems/");
     if (!onLeetCodeProblem) {
-        sendResponse({ error: "Not on a LeetCode problem page." });
-        return;
-        }
-
-        try {
-            const problemData = scrapeProblem();
-            sendResponse({ data: problemData });
-        } catch (error) {
-            sendResponse({ error: "Failed to scrape problem data." });
-        }
-
-        return true; // keep the message channel open for async response
+      sendResponse({ error: "Not on a LeetCode problem page." });
+      return;
     }
+
+    try {
+      const problemData = scrapeProblem();
+      sendResponse({ data: problemData });
+    } catch (error) {
+      sendResponse({ error: "Failed to scrape problem data." });
+    }
+
+    return true; // keep the message channel open for async response
+  }
 });

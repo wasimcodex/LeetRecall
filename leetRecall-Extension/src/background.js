@@ -83,4 +83,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === "complete" && tab.url.includes("leetcode.com/problems/")) {
+        chrome.tabs.sendMessage(tabId, { action: "leetCodePageLoaded", url: tab.url });
+    }
+});
+
 console.log("Background service worker started ✅");
