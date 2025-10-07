@@ -6,7 +6,10 @@ function scrapeProblem() {
     difficulty: getDifficulty(),
     tags: getTags(),
     lang: getSelectedLanguage() || "Unknown",
-    code: getCodeFromEditor()
+    code: getCodeFromEditor(),
+    rememberedCount: 0,
+    forgotCount: 0,
+    lastReviewedAt: new Date().toISOString(),
   };
 }
 
