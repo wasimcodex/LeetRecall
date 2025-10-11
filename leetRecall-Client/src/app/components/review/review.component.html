@@ -19,7 +19,7 @@
       </button>
 
       <div class="solution-box" [class.open]="showSolution">
-        <pre><code>{{ problem.code }}</code></pre>
+        <pre><code [highlight]="problem.code ?? ''" [language]="problem.lang ?? 'plaintext'"></code></pre>
       </div>
     </div>
 
