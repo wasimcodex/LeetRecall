@@ -10,10 +10,10 @@ import {
   orderBy,
   query,
   updateDoc,
+  where,
 } from '@angular/fire/firestore';
 import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { last } from 'rxjs';
 
 interface Problem {
   id: string;
@@ -27,8 +27,8 @@ interface Problem {
   description?: string;
   solution?: string;
   tags?: string[];
-  // Add any other fields as necessary
   weight?: number; // For weighted random selection
+  confidenceScore?: number;
   [key: string]: any;
 }
 
@@ -84,79 +84,74 @@ export class ReviewComponent implements OnInit {
     this.loading = false;
   }
 
-  private async loadRandomProblem() {
-    const colRef = collection(
-      this.firestore,
-      `users/${this.user?.uid}/problems`
-    );
-    const snapshot = await getDocs(colRef);
-    const problems = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    if (problems.length === 0) {
-      console.error('No questions saved yet');
-      this.router.navigate(['/dashboard']);
-      return;
-    }
-
-    const randomIdx = Math.floor(Math.random() * problems.length);
-    this.problem = problems[randomIdx];
-    this.loading = false;
-  }
-
   private async loadWeightedRandomProblem() {
     if (!this.user) return;
+
+    this.loading = true;
 
     const colRef = collection(
       this.firestore,
       `users/${this.user.uid}/problems`
     );
 
-    const q = query(colRef, orderBy('lastReviewedAt', 'asc'), limit(20));
-    const snapshot = await getDocs(q);
-    const problems: Problem[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const q = query(
+      colRef,
+      where('nextReviewAt', '<=', new Date().toISOString()),
+      orderBy('nextReviewAt', 'asc'),
+      limit(50)
+    );
 
-    if (problems.length === 0) {
-      console.error('No questions saved yet');
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      console.warn("No problems due for reveiw.")
+      this.loading = false;
       this.router.navigate(['/dashboard']);
       return;
     }
 
-    // Calculate weights based on forgotten count and last reviewed time
+    const problems: Problem[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Problem[];
+
     const now = new Date().getTime();
-    const weightedProblems = problems.map((problem) => {
-      const forgotCount = problem.forgotCount || 0;
-      const rememberedCount = problem.rememberedCount || 0;
-      const lastReviewedAt = problem.lastReviewedAt
-        ? new Date(problem.lastReviewedAt).getTime()
-        : 0;
-      const timeSinceLastReview = now - lastReviewedAt;
 
-      // Weight formula: more weight for higher forgot count and longer time since last review
-      const weight =
-        ((forgotCount + 1) * (timeSinceLastReview + 1)) / (rememberedCount + 1);
-      return { ...problem, weight };
-    });
+    const weightedProblems = problems.map(problem => {
+      const confidence = problem.confidenceScore ?? 0.5;
+      const lastReviewedAt = problem.lastReviewedAt ? new Date(problem.lastReviewedAt).getTime() : 0;
 
-    // Select a problem based on weights
-    const totalWeight = weightedProblems.reduce((sum, p) => sum + p.weight, 0);
+      const daysSinceLast = (now - lastReviewedAt) / (1000 * 60 * 60 * 24);
+      const recencyBoost = Math.exp(daysSinceLast / 7);
+      const randomness = Math.random() * 0.3 + 0.85;
+
+      const weight = (1 - confidence) * recencyBoost * randomness;
+
+      return {...problem, weight};
+    })
+
+    const totalWeight = weightedProblems.reduce((sum, p) => sum + p.weight, 0)
     let rand = Math.random() * totalWeight;
 
-    for (const problem of weightedProblems) {
-      if (rand < problem.weight) {
-        this.problem = problem;
-        this.problem.description = this.formatDescription(
-          this.problem.description || ''
-        );
+    let selected: Problem | null = null;
+    for (const p of weightedProblems) {
+      if (rand < p.weight) {
+        selected = p;
         break;
       }
-      rand -= problem.weight;
+      rand -= p.weight;
     }
+
+    if (!selected) {
+      console.error("Weighted selection failed - defaulting to first problem.")
+      selected = weightedProblems[0];
+    }
+
+    this.problem = {
+      ...selected,
+      description: this.formatDescription(selected.description || '')
+    };
+
     this.loading = false;
   }
 
@@ -170,25 +165,26 @@ export class ReviewComponent implements OnInit {
     await this.handleFeedback(true);
   }
 
-  private async updateRecallStats(remembered: boolean) {
-    if (!this.problem || !this.user) return;
+  private computeConfidence(remembered: boolean): number {
+    if (!this.problem) return 0;
 
-    const ref = doc(
-      this.firestore,
-      `users/${this.user.uid}/problems/${this.problem.id}`
-    );
-    const updates: any = {
-      lastReviewedAt: new Date().toISOString(),
-    };
+    let rememberedCount = this.problem.rememberedCount ?? 0;
+    let forgotCount = this.problem.forgotCount ?? 0;
+    if (remembered) rememberedCount += 1;
+    else forgotCount += 1;
+    const lastReviewedAt =
+      this.problem.lastReviewedAt ?? new Date().toISOString();
 
-    if (remembered) {
-      updates.rememberedCount = (this.problem.rememberedCount || 0) + 1;
-    } else {
-      updates.forgotCount = (this.problem.forgotCount || 0) + 1;
-    }
+    const total = rememberedCount + forgotCount + 1;
+    const performance = (rememberedCount - forgotCount) / total;
+    const daysSinceLastReview =
+      (Date.now() - new Date(lastReviewedAt).getTime()) / (1000 * 60 * 60 * 24);
+    const decay = Math.exp(-daysSinceLastReview / 10);
 
-    await updateDoc(ref, updates);
-    await this.loadWeightedRandomProblem();
+    // sigmoid scales between 0–1 smoothly
+    const sigmoid = 1 / (1 + Math.exp(-performance * 3));
+
+    return Math.min(1, Math.max(0, sigmoid * decay));
   }
 
   private async handleFeedback(remembered: boolean) {
@@ -199,13 +195,24 @@ export class ReviewComponent implements OnInit {
       this.firestore,
       `users/${this.user.uid}/problems/${this.problem.id}`
     );
-    const updates: any = { lastReviewedAt: new Date().toISOString() };
+
+    const confidenceScore = this.computeConfidence(remembered);
+
+    const baseInterval = 1;
+    const multiplier = 1 + confidenceScore * 4;
+    const nextReviewAt = new Date(new Date().getTime() + baseInterval * multiplier * 24 * 60 * 60 * 1000);
+    const updates: any = {
+      lastReviewedAt: new Date().toISOString(),
+      confidenceScore,
+      nextReviewAt: nextReviewAt.toISOString()
+    };
+
     if (remembered)
       updates.rememberedCount = (this.problem.rememberedCount || 0) + 1;
     else updates.forgotCount = (this.problem.forgotCount || 0) + 1;
 
     await updateDoc(ref, updates);
-  
+
     const cardEl = document.querySelector('.problem-card');
     cardEl?.classList.add('fade-out');
 

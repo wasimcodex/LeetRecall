@@ -3,8 +3,6 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { collection, Firestore, limit, orderBy, query, collectionData, startAfter, getDocs } from '@angular/fire/firestore';
-import { Observable, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -65,4 +63,11 @@ export class DashboardComponent implements OnInit {
   signOut() {
     this.auth.signOutUser();
   }
+
+  getConfidenceColor(score: number = 0): string {
+    if (score >= 0.8) return "#28a745"; // Strong Green
+    if (score >= 0.5) return "#f39c12"; // Rich Amber
+    return "#c0392b";                // Deep Red
+  }
+
 }

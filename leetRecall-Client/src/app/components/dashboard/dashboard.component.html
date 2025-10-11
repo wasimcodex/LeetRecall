@@ -14,8 +14,9 @@
 
   <!-- Main content -->
   <main class="main-content">
-    <button [routerLink]="['/review']" class="review-random-btn">🎲 Review Random</button>
-    
+    <button [routerLink]="['/review']" class="review-random-btn">
+      Smart Recall
+    </button>
     <h2>Recently Saved Questions</h2>
 
     <div class="empty-state" *ngIf="!loading && problems.length === 0">
@@ -23,10 +24,7 @@
       <p>Go to LeetCode and start saving your favorite problems!</p>
     </div>
 
-    <div
-      class="problem-card"
-      *ngFor="let problem of problems"
-    >
+    <div class="problem-card" *ngFor="let problem of problems">
       <div class="problem-header">
         <a [routerLink]="['/review', problem.id]" class="title">{{
           problem.title
@@ -35,8 +33,14 @@
           {{ problem.difficulty }}
         </span>
       </div>
-      <div class="tags">
-        <span class="tag" *ngFor="let tag of problem.tags">{{ tag }}</span>
+      <div class="meta">
+        <div class="tags">
+          <span class="tag" *ngFor="let tag of problem.tags">{{ tag }}</span>
+        </div>
+        <div class="confidence"
+          [ngStyle]="{ backgroundColor: getConfidenceColor(problem.confidenceScore) }">
+          {{ problem.confidenceScore ?? 0 | number : "1.0-2" }}
+        </div>
       </div>
     </div>
 

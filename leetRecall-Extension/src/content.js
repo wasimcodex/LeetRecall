@@ -1,4 +1,6 @@
 function scrapeProblem() {
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + 2); // 2 days later
   return {
     title: getTitle(),
     url: normalizeUrl(window.location.href),
@@ -10,6 +12,8 @@ function scrapeProblem() {
     rememberedCount: 0,
     forgotCount: 0,
     lastReviewedAt: new Date().toISOString(),
+    confidenceScore: 0.5, // initial neutral score
+    nextReviewAt: futureDate.toISOString(),
   };
 }
 
