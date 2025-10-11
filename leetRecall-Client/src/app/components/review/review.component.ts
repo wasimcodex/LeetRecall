@@ -14,6 +14,8 @@ import {
 } from '@angular/fire/firestore';
 import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HighlightModule } from 'ngx-highlightjs';
+import { mapLanguage } from '../../utils/language-map';
 
 interface Problem {
   id: string;
@@ -21,6 +23,7 @@ interface Problem {
   forgotCount?: number;
   lastReviewedAt?: string;
   code?: string;
+  lang?: string;
   difficulty?: string;
   title?: string;
   url?: string;
@@ -34,7 +37,7 @@ interface Problem {
 
 @Component({
   selector: 'app-review',
-  imports: [CommonModule],
+  imports: [CommonModule, HighlightModule],
   templateUrl: './review.component.html',
   styleUrl: './review.component.scss',
 })
@@ -76,6 +79,7 @@ export class ReviewComponent implements OnInit {
       this.problem.description = this.formatDescription(
         this.problem.description || ''
       );
+      this.problem.lang = mapLanguage(this.problem.lang || '');
     } else {
       console.error('No such document!');
       this.router.navigate(['/dashboard']);
@@ -149,7 +153,8 @@ export class ReviewComponent implements OnInit {
 
     this.problem = {
       ...selected,
-      description: this.formatDescription(selected.description || '')
+      description: this.formatDescription(selected.description || ''),
+      lang: mapLanguage(selected.lang || '')
     };
 
     this.loading = false;
