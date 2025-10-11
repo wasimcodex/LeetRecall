@@ -5,6 +5,7 @@ export function mapLanguage(lang: string): string {
 
     const mapping: { [key: string]: string } = {
         'python3': 'python',
+        'python': 'python',
         'py': 'python',
         'javascript': 'javascript',
         'js': 'javascript',
