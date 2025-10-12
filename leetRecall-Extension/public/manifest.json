@@ -36,7 +36,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["config.json"],
+      "resources": ["config.json", "inject.js"],
       "matches": ["<all_urls>"]
     }
   ]
