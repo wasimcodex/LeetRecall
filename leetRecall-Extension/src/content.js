@@ -1,4 +1,4 @@
-function scrapeProblem() {
+async function scrapeProblem() {
   const futureDate = new Date();
   futureDate.setDate(futureDate.getDate() + 2); // 2 days later
   return {
@@ -8,7 +8,7 @@ function scrapeProblem() {
     difficulty: getDifficulty(),
     tags: getTags(),
     lang: getSelectedLanguage() || "Unknown",
-    code: getCodeFromEditor(),
+    code: await getCodeFromEditor(),
     rememberedCount: 0,
     forgotCount: 0,
     lastReviewedAt: new Date().toISOString(),
@@ -74,20 +74,25 @@ function getSelectedLanguage() {
 
 /** Extract code text from Monaco editor */
 function getCodeFromEditor() {
-  const lines = document.querySelectorAll(".view-lines .view-line");
+  return new Promise((resolve) => {
+    // Listen for message from page
+    function handleMessage(event) {
+      if (event.source === window && event.data?.type === "FROM_PAGE_SCRIPT") {
+        window.removeEventListener("message", handleMessage);
+        resolve(event.data.text);
+      }
+    }
 
-  // Map each line with its position
-  const sorted = Array.from(lines).map((line) => {
-    const top = parseInt(line.style.top.replace("px", ""), 10);
-    return { top, text: line.innerText };
+    window.addEventListener("message", handleMessage);
+
+    // Inject our file (not inline)
+    const script = document.createElement("script");
+    script.src = chrome.runtime.getURL("inject.js");
+    (document.head || document.documentElement).appendChild(script);
+    script.onload = () => script.remove();
   });
-
-  // Sort visually by "top"
-  sorted.sort((a, b) => a.top - b.top);
-
-  // Join into final code block
-  return sorted.map((line) => line.text).join("\n");
 }
+
 
 function injectSaveButton(isSaved = false) {
   const existingBtn = document.getElementById("lc-save-btn");
@@ -134,7 +139,7 @@ function injectSaveButton(isSaved = false) {
   saveBtn.addEventListener("click", async () => {
     try {
       if (isSaved) {
-        const code = getCodeFromEditor();
+        const code = await getCodeFromEditor();
         chrome.runtime.sendMessage(
           {
             action: "updateProblemCode",
@@ -153,7 +158,7 @@ function injectSaveButton(isSaved = false) {
           }
         );
       } else {
-        const problemData = scrapeProblem();
+        const problemData = await scrapeProblem();
 
         chrome.runtime.sendMessage(
           { action: "saveProblem", data: problemData },
@@ -230,7 +235,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 console.log("✅ Content script loaded on", window.location.href);
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.action === "scrapeProblem") {
     const onLeetCodeProblem =
       window.location.hostname === "leetcode.com" &&
@@ -241,7 +246,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     try {
-      const problemData = scrapeProblem();
+      const problemData = await scrapeProblem();
       sendResponse({ data: problemData });
     } catch (error) {
       sendResponse({ error: "Failed to scrape problem data." });
